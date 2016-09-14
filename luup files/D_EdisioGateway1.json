@@ -1,0 +1,188 @@
+{
+	"flashicon": "http://vosmont.github.io/icons/edisio_gateway.png",
+	"state_icons": [
+		"edisio_gateway_0.png",
+		"edisio_gateway_100.png"
+	],
+	"DisplayStatus": {
+		"Service": "urn:upnp-org:serviceId:SwitchPower1",
+		"Variable": "Status",
+		"MinValue": "0",
+		"MaxValue": "1"
+	},
+	"x": "2",
+	"y": "4",
+	"inScene": "1",
+	"Tabs": [
+		{
+			"Label": {
+				"lang_tag": "tabname_control",
+				"text": "Control"
+			},
+			"Position": "0",
+			"TabType": "flash",
+			"SceneGroup": [
+				{
+					"id": "1",
+					"top": "2",
+					"left": "0",
+					"x": "2",
+					"y": "1"
+				}
+			],
+			"ControlGroup": [
+				{
+					"id": "1",
+					"isSingle": "1",
+					"scenegroup": "1"
+				},
+				{
+					"id": "2",
+					"isSingle": "1",
+					"scenegroup": "1"
+				},
+				{
+					"id": "3",
+					"isSingle": "1",
+					"scenegroup": "1"
+				}
+			],
+			"Control": [
+				{
+					"ControlGroup": "1",
+					"ControlType": "button",
+					"top": "1.5",
+					"left": "0",
+					"Label": {
+						"lang_tag": "cmd_off",
+						"text": "Off"
+					},
+					"Display": {
+						"Service": "urn:upnp-org:serviceId:SwitchPower1",
+						"Variable": "Status",
+						"Value": "0",
+						"Top": 60,
+						"Left": 50,
+						"Width": 75,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:SwitchPower1",
+						"Action": "SetTarget",
+						"Parameters": [
+							{
+								"Name": "newTargetValue",
+								"Value": "0"
+							}
+						]
+					},
+					"ControlCode": "power_off"
+				},
+				{
+					"ControlGroup": "2",
+					"ControlType": "button",
+					"top": "1.5",
+					"left": "1",
+					"Label": {
+						"lang_tag": "cmd_on",
+						"text": "On"
+					},
+					"Display": {
+						"Service": "urn:upnp-org:serviceId:SwitchPower1",
+						"Variable": "Status",
+						"Value": "1",
+						"Top": 60,
+						"Left": 145,
+						"Width": 75,
+						"Height": 20
+					},
+					"Command": {
+						"Service": "urn:upnp-org:serviceId:SwitchPower1",
+						"Action": "SetTarget",
+						"Parameters": [
+							{
+								"Name": "newTargetValue",
+								"Value": "1"
+							}
+						]
+					},
+					"ControlCode": "power_on"
+				},
+				{
+					"ControlType": "label",
+					"top": "1",
+					"left": "0",
+					"text_align": "left",
+					"Label": {
+						"lang_tag": "edisiogateway_version",
+						"text": "Version"
+					},
+					"Display": {
+						"Top": 25,
+						"Left": 10,
+						"Width": 50,
+						"Height": 20
+					}
+				},
+				{
+					"ControlGroup": "3",
+					"ControlType": "variable",
+					"top": "3.4",
+					"left": "-1",
+					"x": "1",
+					"text_align": "left",
+					"Display": {
+						"Service": "urn:upnp-org:serviceId:EdisioGateway1",
+						"Variable": "PluginVersion",
+						"Top": 25,
+						"Left": 80,
+						"Width": 50,
+						"Height": 20
+					}
+				}
+			]
+		},
+		{
+			"Label": {
+				"lang_tag": "settings",
+				"text": "Settings"
+			},
+			"Position": "1",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "simple_device"
+		},
+		{
+			"Label": {
+				"lang_tag": "devices",
+				"text": "Devices"
+			},
+			"Position": "2",
+			"TabType": "javascript",
+			"ScriptName": "J_EdisioGateway1.js",
+			"Function": "EdisioGateway.showDevices"
+		},
+		{
+			"Label": {
+				"lang_tag": "discovered_devices",
+				"text": "Discovered"
+			},
+			"Position": "3",
+			"TabType": "javascript",
+			"ScriptName": "J_EdisioGateway1.js",
+			"Function": "EdisioGateway.showDiscoveredDevices"
+		},
+		{
+			"Label": {
+				"lang_tag": "advanced",
+				"text": "Advanced"
+			},
+			"Position": "4",
+			"TabType": "javascript",
+			"ScriptName": "shared.js",
+			"Function": "advanced_device"
+		}
+	],
+	"DeviceType": "urn:schemas-upnp-org:device:EdisioGateway:1",
+	"device_type": "urn:schemas-upnp-org:device:EdisioGateway:1"
+}

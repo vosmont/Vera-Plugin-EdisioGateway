@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<implementation>
+	<functions>
+		-- Sometimes the 'incoming' function is executed before the 'startup'
+		-- function has run, and therefore, before the plugin initialization.
+		-- Most of the time this happens when the protocol is 'raw',
+		-- which this plugin uses.
+		local fc = 0 -- failure counter
+		local edisioPlugin
+
+		function edisio_startup (lul_device)
+			luup.log("Edisio Gateway startup")
+			--package.loaded.L_EdisioGateway1 = nil
+			edisioPlugin = require("L_EdisioGateway1")
+			return edisioPlugin.init(lul_device)
+		end
+	</functions>
+	<startup>edisio_startup</startup>
+	<incoming>
+		<lua>
+			-- If the 'startup' function hasn't run yet,
+			-- 'edisioPlugin' and 'handleIncoming' are not defined.
+			if not edisioPlugin.handleIncoming then
+				fc = fc + 1
+				luup.log("(edisioPlugin::incoming) fc=" .. tostring(fc))
+			else
+				edisioPlugin.handleIncoming(lul_data)
+			end
+		</lua>
+	</incoming>
+	<actionList>
+		<!-- Security Sensor -->
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
+			<name>SetArmed</name>
+			<job>
+				return edisioPlugin.setArmed(lul_device, lul_settings.newArmedValue)
+			</job>
+		</action>
+		<!-- HaDevice -->
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+			<name>Reconfigure</name>
+			<job>
+				return edisioPlugin.reconfigure(lul_device)
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+			<name>Poll</name>
+			<job>
+				return edisioPlugin.poll(lul_device)
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+			<name>ToggleState</name>
+			<job>
+				return edisioPlugin.setTarget(lul_device, nil)
+			</job>
+		</action>
+		<!-- SwitchPower -->
+		<action>
+			<serviceId>urn:upnp-org:serviceId:SwitchPower1</serviceId>
+			<name>SetTarget</name>
+			<job>
+				return edisioPlugin.setTarget(lul_device, lul_settings.newTargetValue)
+			</job>
+		</action>
+		<!-- Dimming -->
+		<action>
+			<serviceId>urn:upnp-org:serviceId:Dimming1</serviceId>
+			<name>SetLoadLevelTarget</name>
+			<job>
+				return edisioPlugin.setLoadLevelTarget(lul_device, lul_settings.newLoadlevelTarget)
+			</job>
+		</action>
+		<!-- WindowCovering -->
+		<action>
+			<serviceId>urn:upnp-org:serviceId:WindowCovering1</serviceId>
+			<name>Up</name>
+			<job>
+				return edisioPlugin.moveShutter(lul_device, "up")
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:WindowCovering1</serviceId>
+			<name>Down</name>
+			<job>
+				return edisioPlugin.moveShutter(lul_device, "down")
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:WindowCovering1</serviceId>
+			<name>Stop</name>
+			<job>
+				return edisioPlugin.moveShutter(lul_device, "stop")
+			</job>
+		</action>
+		<!-- Edisio gateway -->
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>SendMessage</name>
+			<job>
+				return edisioPlugin.sendMessage(lul_settings.message)
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>Refresh</name>
+			<job>
+				return edisioPlugin.refresh()
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>CreateDevices</name>
+			<job>
+				return edisioPlugin.createDevices(lul_settings.edisioIds)
+			</job>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>TeachIn</name>
+			<run>
+				return edisioPlugin.teachIn(lul_settings.edisioId)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>Clear</name>
+			<run>
+				return edisioPlugin.clear(lul_settings.edisioId)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+			<name>Associate</name>
+			<run>
+				return edisioPlugin.associate(lul_settings.edisioId, lul_settings.association)
+			</run>
+		</action>
+		<!-- Edisio device -->
+	</actionList>
+</implementation>

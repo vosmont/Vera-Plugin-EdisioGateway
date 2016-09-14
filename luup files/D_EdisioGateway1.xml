@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+	<specVersion>
+		<major>1</major>
+		<minor>0</minor>
+	</specVersion>
+	<device>
+		<deviceType>urn:schemas-upnp-org:device:EdisioGateway:1</deviceType>
+		<staticJson>D_EdisioGateway1.json</staticJson>
+		<friendlyName>Edisio Gateway</friendlyName>
+		<manufacturer>vosmont</manufacturer>
+		<manufacturerURL>https://github.com/vosmont</manufacturerURL>
+		<modelName>DGL-EDISIO</modelName>
+		<modelURL>http://www.edisio.com/</modelURL>
+		<commUse>rs232</commUse>
+		<protocol>raw</protocol>
+		<handleChildren>1</handleChildren>
+		<serviceList>
+			<service>
+				<serviceType>urn:schemas-upnp-org:service:EdisioGateway:1</serviceType>
+				<serviceId>urn:upnp-org:serviceId:EdisioGateway1</serviceId>
+				<SCPDURL>S_EdisioGateway1.xml</SCPDURL>
+			</service>
+		</serviceList>
+		<implementationList>
+			<implementationFile>I_EdisioGateway1.xml</implementationFile>
+		</implementationList>
+	</device>
+</root>
