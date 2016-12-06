@@ -7,6 +7,7 @@
 
 module( "L_EdisioGateway1", package.seeall )
 
+-- Load libraries
 local status, json = pcall( require, "dkjson" )
 if ( type( json ) ~= "table" ) then
 	-- UI5
@@ -20,7 +21,7 @@ end
 
 _NAME = "EdisioGateway"
 _DESCRIPTION = "edisio gateway for the Vera"
-_VERSION = "0.6"
+_VERSION = "0.7"
 _AUTHOR = "vosmont"
 
 
@@ -161,40 +162,84 @@ local SYS_MESSAGE_TYPES = {
 }
 
 -- **************************************************
--- edisio protocol 1.1
+-- edisio protocol (White book edisio V1.24)
 -- **************************************************
 
-local EDISIO_MODEL = {
-	EMITTER_CHANNEL_1  = 0x01, -- Button
-	EMITTER_CHANNEL_2  = 0x02, -- Button
-	EMITTER_CHANNEL_3  = 0x03, -- Button
-	EMITTER_CHANNEL_4  = 0x04, -- Button
-	EMITTER_CHANNEL_5  = 0x05, -- Button
-	ENERGY_METER       = 0x06,
-	MOTION_SENSOR      = 0x07, -- On/Off/Pulse
-	TEMPERATURE_SENSOR = 0x08,
-	DOOR_SENSOR        = 0x09, -- On/Off/Pulse
-	EMR_2000   = 0x10, -- On/Off or Pulse
-	EMV_400    = 0x11, -- On/Off or 1x Open/Close
-	EDR_D4     = 0x12, -- On/Off or Dimer
-	EDR_B4     = 0x13, -- On/Off/Pulse or 2x Open/Close
-	EMSD_300A  = 0x14, -- On/Off or Dimer
-	EMSD_300   = 0x15, -- On/Off or Dimer
-	GATEWAY    = 0x16
+local EDISIO_DEVICES = {
+	{
+		modelId = 0x01, model = "BUTTON", modelDesc = "Emitter 8 Channels", modelFunction = "On/Off/Pulse/Open/Close", -- (ETC1/ETC4/EBP8)
+		deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true
+	}, {
+		modelId = 0x07, model = "EMS-100", modelDesc = "Motion sensor", modelFunction = "On/Off/Pulse/Open/Close",
+		deviceTypes = { "MOTION_SENSOR" }, isBatteryPowered = true
+	}, {
+		modelId = 0x08, model = "ETS-100", modelDesc = "Temperature sensor", modelFunction = "Temperature",
+		deviceTypes = { "TEMPERATURE_SENSOR" }, isBatteryPowered = true
+	}, {
+		modelId = 0x09, model = "EDS-100", modelDesc = "Door sensor", modelFunction = "On/Off/Pulse/Open/Close",
+		deviceTypes = { "DOOR_SENSOR" }, isBatteryPowered = true
+	}, {
+		modelId = 0x10, model = "EMR-2000", modelDesc = "Receiver 1 Output", modelFunction = "1x On/Off or Pulse",
+		deviceTypes = { "BINARY_LIGHT" }, isReceiver = true
+	}, {
+		modelId = 0x11, model = "EMV-400", modelDesc = "Receiver 2 Outputs", modelFunction = "2x On/Off or 1x Open/Close",
+		deviceTypes = { "BINARY_LIGHT", "WINDOW_COVERING" }, isReceiver = true, nbChannels = 2
+	}, {
+		modelId = 0x12, model = "EDR-D4", modelDesc = "Receiver 4 outputs", modelFunction = "4x On/Off or Dimer",
+		deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isReceiver = true, nbChannels = 4
+	}, {
+		modelId = 0x13, model = "EDR-B4", modelDesc = "Receiver 4 outputs", modelFunction = "4x On/Off/Pulse or 2x Open/Close",
+		deviceTypes = { "BINARY_LIGHT", "WINDOW_COVERING" }, isReceiver = true, nbChannels = 4
+	}, {
+		modelId = 0x14, model = "EMSD-300A", modelDesc = "Receiver 1 Output", modelFunction = "1x On/Off or Dimer",
+		deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isReceiver = true
+	}, {
+		modelId = 0x15, model = "EMSD-300", modelDesc = "Receiver 1 Output", modelFunction = "1x On/Off or Dimer",
+		deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isReceiver = true
+	}, {
+		modelId = 0x16, model = "GATEWAY"
+	}, {
+		modelId = 0x17, model = "EMM-230", modelDesc = "Emitter 2 Channels", modelFunction = "2x On/Off/Pulse/Open/Stop/Close",
+		deviceTypes = { "BINARY_LIGHT" }, isButton = true, nbChannels = 2
+	}, {
+		modelId = 0x18, model = "EMM-100", modelDesc = "Emitter 2 Channels", modelFunction = "2x On/Off/Pulse/Open/Stop/Close",
+		deviceTypes = { "BINARY_LIGHT" }, isButton = true, isBatteryPowered = true, nbChannels = 2
+	}, {
+		modelId = 0x0E, model = "ED-TH-01", modelDesc = "Thermostat", modelFunction = "Thermostat",
+		deviceTypes = { "TEMPERATURE_SENSOR" }
+	}, {
+		modelId = 0x0B, model = "ED-LI-01", modelDesc = "Receiver 1 Output", modelFunction = "1x On/Off",
+		deviceTypes = { "BINARY_LIGHT" }, isReceiver = true
+	}, {
+		modelId = 0x0F, model = "ED-TH-02", modelDesc = "Receiver 1 Output", modelFunction = "1x On/Off Heater/Cooler",
+		deviceTypes = {}, isReceiver = true
+	}, {
+		modelId = 0x0C, model = "ED-TH-03", modelDesc = "Receiver 1 Output FP", modelFunction = "1x Off/Eco/Comfort/Auto (Fil Pilote)",
+		deviceTypes = {}, isReceiver = true
+	}, {
+		modelId = 0x0D, model = "ED-SH-01", modelDesc = "Receiver 2 Outputs", modelFunction = "1x Open/Stop/Close",
+		deviceTypes = { "WINDOW_COVERING" }, isReceiver = true
+	}
 }
 
-local EDISIO_INFOS = {
-	[EDISIO_MODEL.EMITTER_CHANNEL_1]  = { modelName = "Button", deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true },
-	[EDISIO_MODEL.EMITTER_CHANNEL_2]  = { modelName = "Button", deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true },
-	[EDISIO_MODEL.EMITTER_CHANNEL_3]  = { modelName = "Button", deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true },
-	[EDISIO_MODEL.EMITTER_CHANNEL_4]  = { modelName = "Button", deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true },
-	[EDISIO_MODEL.EMITTER_CHANNEL_5]  = { modelName = "Button", deviceTypes = { "BINARY_LIGHT", "DIMMABLE_LIGHT" }, isButton = true, isBatteryPowered = true },
-	[EDISIO_MODEL.MOTION_SENSOR]      = { modelName = "Motion sensor", deviceTypes = { "MOTION_SENSOR" }, isBatteryPowered = true },
-	[EDISIO_MODEL.TEMPERATURE_SENSOR] = { modelName = "Temperature sensor", deviceTypes = { "TEMPERATURE_SENSOR" }, isBatteryPowered = true },
-	[EDISIO_MODEL.DOOR_SENSOR]        = { modelName = "Door sensor", deviceTypes = { "DOOR_SENSOR" }, isBatteryPowered = true },
-	[EDISIO_MODEL.EMSD_300] = { modelName = "Dimmer", deviceTypes = { "DIMMABLE_LIGHT" }, isReceiver = true },
-	[EDISIO_MODEL.EDR_B4]   = { modelName = "Receiver 4 outputs", deviceTypes = { "BINARY_LIGHT", "WINDOW_COVERING" }, isReceiver = true, nbChannels = 4 }
-}
+local EDISIO_MODEL = {}
+local _indexEdisioInfosById = {}
+for _, edisioInfos in ipairs( EDISIO_DEVICES ) do
+	EDISIO_MODEL[ edisioInfos.model ] = edisioInfos.modelId
+	_indexEdisioInfosById[ edisioInfos.modelId ] = edisioInfos
+end
+local function _getEdisioInfos( modelId )
+	local edisioInfos = _indexEdisioInfosById[ modelId ]
+	if ( edisioInfos == nil ) then
+		warning( "Can not get infos for edisio model " .. number_toHex( modelId ), "getEdisioInfos" )
+		edisioInfos = {
+			modelId = 0x00, model = "UNKNOWN", modelDesc = "Unknown", modelFunction = "",
+			deviceTypes = {}
+		}
+	end
+	return edisioInfos
+end
+
 
 --[[
 local EDISIO_PARAMS = {
@@ -218,22 +263,26 @@ local EDISIO_COMMAND = {
 	DIM_STOP        = 0x08,
 	SHUTTER_OPEN    = 0x09,
 	SHUTTER_CLOSE   = 0x0A,
+	--SHUTTER_CLOSE   = 0x1B, -- (USB dongle V1.0)
 	SHUTTER_STOP    = 0x0B,
 	RGB             = 0x0C,
 	SET_SHORT       = 0x10,
 	SET_5S          = 0x11,
 	SET_10S         = 0x12,
-	STUDY           = 0x16,
-	DEL_BUTTON      = 0x17,
-	DEL_ALL         = 0x18,
-	DOOR_CLOSE      = 0x19,
+	STUDY           = 0x16, -- Pairing Request by Gateway
+	DEL_BUTTON      = 0x17, -- Reserved for gateway
+	DEL_ALL         = 0x18, -- Reserved for gateway
+	--DOOR_CLOSE      = 0x19, -- ??
+	SET_TEMPERATURE = 0x19, -- Temperature sent by the temperature sensor
 	DOOR_OPEN       = 0x1A,
-	BROADCAST_QUERY = 0x1F,
+	--BROADCAST_QUERY = 0x1F,
 	QUERY_STATUS    = 0x20,
 	REPORT_STATUS   = 0x21,
 	READ_CUSTOM     = 0x23,
 	SAVE_CUSTOM     = 0x24,
-	REPORT_CUSTOM   = 0x29
+	REPORT_CUSTOM   = 0x29,
+	SET_SHORT_DIMMER = 0x2C,
+	SET_SHORT_SENSOR = 0x2F
 }
 local function _getEdisioCommandName( CMD )
 	for commandName, commandCode in pairs( EDISIO_COMMAND ) do
@@ -241,7 +290,7 @@ local function _getEdisioCommandName( CMD )
 			return commandName
 		end
 	end
-	return "UNKNOW(" .. _toHex( CMD ) .. ")"
+	return "UNKNOW(" .. number_toHex( CMD ) .. ")"
 end
 
 local STATE = {
@@ -269,12 +318,16 @@ local g_indexEdisioDevicesByDeviceId = {}
 local g_maxId = 0           -- A number that increments with every device learned.
 local g_baseId = ""
 
+-- **************************************************
+-- Number functions
+-- **************************************************
+
 -- Formats a number as hex.
-local function _toHex (n)
-	if (type(n) == "number") then
-		return string.format("%02X", n)
+function number_toHex( n )
+	if ( type( n ) == "number" ) then
+		return string.format( "%02X", n )
 	end
-	return tostring(n)
+	return tostring( n )
 end
 
 -- **************************************************
@@ -282,7 +335,7 @@ end
 -- **************************************************
 
 -- Merges (deeply) the contents of one table (t2) into another (t1)
-local function table_extend( t1, t2, excludedKeys )
+function table_extend( t1, t2, excludedKeys )
 	if ( ( t1 == nil ) or ( t2 == nil ) ) then
 		return
 	end
@@ -327,98 +380,95 @@ local function table_extend( t1, t2, excludedKeys )
 	return t1
 end
 
-local table = table_extend( {}, table ) -- do not pollute original "table"
-do -- Extend table
-	table.extend = table_extend
 
-	-- Checks if a table contains the given item.
-	-- Returns true and the key / index of the item if found, or false if not found.
-	function table.contains( t, item )
-		for k, v in pairs( t ) do
-			if ( v == item ) then
-				return true, k
-			end
+-- Checks if a table contains the given item.
+-- Returns true and the key / index of the item if found, or false if not found.
+function table_contains( t, item )
+	for k, v in pairs( t ) do
+		if ( v == item ) then
+			return true, k
 		end
+	end
+	return false
+end
+
+-- Checks if table contains all the given items (table).
+function table_containsAll( t1, items )
+	if ( ( type( t1 ) ~= "table" ) or ( type( t2 ) ~= "table" ) ) then
 		return false
 	end
-
-	-- Checks if table contains all the given items (table).
-	function table.containsAll( t1, items )
-		if ( ( type( t1 ) ~= "table" ) or ( type( t2 ) ~= "table" ) ) then
+	for _, v in pairs( items ) do
+		if not table_contains( t1, v ) then
 			return false
 		end
-		for _, v in pairs( items ) do
-			if not table.contains( t1, v ) then
-				return false
-			end
-		end
-		return true
 	end
+	return true
+end
 
-	-- Appends the contents of the second table at the end of the first table
-	function table.append( t1, t2, noDuplicate )
-		if ( ( t1 == nil ) or ( t2 == nil ) ) then
+-- Appends the contents of the second table at the end of the first table
+function table_append( t1, t2, noDuplicate )
+	if ( ( t1 == nil ) or ( t2 == nil ) ) then
+		return
+	end
+	local table_insert = table.insert
+	if ( type( t2 ) == "table" ) then
+		table.foreach(
+			t2,
+			function ( _, v )
+				if ( noDuplicate and table_contains( t1, v ) ) then
+					return
+				end
+				table_insert( t1, v )
+			end
+		)
+	else
+		if ( noDuplicate and table_contains( t1, t2 ) ) then
 			return
 		end
-		local table_insert = table.insert
-		if ( type( t2 ) == "table" ) then
-			table.foreach(
-				t2,
-				function ( _, v )
-					if ( noDuplicate and table.contains( t1, v ) ) then
-						return
-					end
-					table_insert( t1, v )
-				end
-			)
-		else
-			if ( noDuplicate and table.contains( t1, t2 ) ) then
-				return
-			end
-			table_insert( t1, t2 )
-		end
-		return t1
+		table_insert( t1, t2 )
 	end
+	return t1
+end
 
-	-- Extracts a subtable from the given table
-	function table.extract( t, start, length )
-		if ( start < 0 ) then
-			start = #t + start + 1
-		end
-		length = length or ( #t - start + 1 )
-
-		local t1 = {}
-		for i = start, start + length - 1 do
-			t1[#t1 + 1] = t[i]
-		end
-		return t1
+-- Extracts a subtable from the given table
+function table_extract( t, start, length )
+	if ( start < 0 ) then
+		start = #t + start + 1
 	end
+	length = length or ( #t - start + 1 )
 
-	function table.concatChar( t )
-		local res = ""
-		for i = 1, #t do
-			res = res .. string.char( t[i] )
-		end
-		return res
+	local t1 = {}
+	for i = start, start + length - 1 do
+		t1[#t1 + 1] = t[i]
 	end
+	return t1
+end
 
-	-- Concatenates a table of numbers into a string with Hex separated by the given separator.
-	function table.concatHex( t, sep, start, length )
-		sep = sep or "-"
-		start = start or 1
-		if ( start < 0 ) then
-			start = #t + start + 1
-		end
-		length = length or ( #t - start + 1 )
-		local s = _toHex( t[start] )
-		if ( length > 1 ) then
-			for i = start + 1, start + length - 1 do
-				s = s .. sep .. _toHex( t[i] )
-			end
-		end
-		return s
+--[[
+function table_concatChar( t )
+	local res = ""
+	for i = 1, #t do
+		res = res .. string.char( t[i] )
 	end
+	return res
+end
+--]]
 
+-- Concatenates a table of numbers into a string with Hex separated by the given separator.
+function table_concatHex( t, sep, start, length )
+	sep = sep or "-"
+	start = start or 1
+	if ( start < 0 ) then
+		start = #t + start + 1
+	end
+	length = length or ( #t - start + 1 )
+	local s = number_toHex( t[start] )
+	if ( length > 1 ) then
+		for i = start + 1, start + length - 1 do
+			s = s .. sep .. number_toHex( t[i] )
+		end
+	end
+	return s
 end
 
 
@@ -426,57 +476,54 @@ end
 -- String functions
 -- **************************************************
 
-local string = table_extend( {}, string ) -- do not pollute original "string"
-do -- Extend string
-	-- Pads string to given length with given char from left.
-	function string.lpad( s, length, c )
-		s = tostring( s )
-		length = length or 2
-		c = c or " "
-		return c:rep( length - #s ) .. s
-	end
+-- Pads string to given length with given char from left.
+function string_lpad( s, length, c )
+	s = tostring( s )
+	length = length or 2
+	c = c or " "
+	return c:rep( length - #s ) .. s
+end
 
-	-- Pads string to given length with given char from right.
-	function string.rpad( s, length, c )
-		s = tostring( s )
-		length = length or 2
-		c = char or " "
-		return s .. c:rep( length - #s )
-	end
+-- Pads string to given length with given char from right.
+function string_rpad( s, length, c )
+	s = tostring( s )
+	length = length or 2
+	c = char or " "
+	return s .. c:rep( length - #s )
+end
 
-	-- Splits a string based on the given separator. Returns a table.
-	function string.split( s, sep, convert, convertParam )
-		if ( type( convert ) ~= "function" ) then
-			convert = nil
+-- Splits a string based on the given separator. Returns a table.
+function string_split( s, sep, convert, convertParam )
+	if ( type( convert ) ~= "function" ) then
+		convert = nil
+	end
+	if ( type( s ) ~= "string" ) then
+		return {}
+	end
+	sep = sep or " "
+	local t = {}
+	for token in s:gmatch( "[^" .. sep .. "]+" ) do
+		if ( convert ~= nil ) then
+			token = convert( token, convertParam )
 		end
-		if ( type( s ) ~= "string" ) then
-			return {}
-		end
-		sep = sep or " "
-		local t = {}
-		for token in s:gmatch( "[^" .. sep .. "]+" ) do
-			if ( convert ~= nil ) then
-				token = convert( token, convertParam )
+		table.insert( t, token )
+	end
+	return t
+end
+
+-- Formats a string into hex.
+function string_formatToHex( s, sep )
+	sep = sep or "-"
+	local result = ""
+	if ( s ~= nil ) then
+		for i = 1, string.len( s ) do
+			if ( i > 1 ) then
+				result = result .. sep
 			end
-			table.insert( t, token )
+			result = result .. string.format( "%02X", string.byte( s, i ) )
 		end
-		return t
 	end
-
-	-- Formats a string into hex.
-	function string.formatToHex( s, sep )
-		sep = sep or "-"
-		local result = ""
-		if ( s ~= nil ) then
-			for i = 1, string.len( s ) do
-				if ( i > 1 ) then
-					result = result .. sep
-				end
-				result = result .. string.format( "%02X", string.byte( s, i ) )
-			end
-		end
-		return result
-	end
+	return result
 end
 
 
@@ -491,7 +538,7 @@ function log( msg, methodName, lvl )
 	else
 		methodName = "(" .. _NAME .. "::" .. tostring( methodName ) .. ")"
 	end
-	luup.log( string.rpad( methodName, 45 ) .. " " .. tostring( msg ), lvl )
+	luup.log( string_rpad( methodName, 45 ) .. " " .. tostring( msg ), lvl )
 end
 
 local function debug() end
@@ -516,6 +563,15 @@ end
 -- **************************************************
 
 Variable = {
+	-- Check if variable (service) is supported
+	isSupported = function( deviceId, variable )
+		if not luup.device_supports_service( variable[1], deviceId ) then
+			warning( "Device #" .. tostring( deviceId ) .. " does not support service " .. variable[1], "Variable.isSupported" )
+			return false
+		end
+		return true
+	end,
+
 	-- Get variable timestamp
 	getTimestamp = function( deviceId, variable )
 		if ( ( type( variable ) == "table" ) and ( type( variable[4] ) == "string" ) ) then
@@ -739,11 +795,13 @@ DiscoveredDevices = {
 		local hasBeenAdded = false
 		local discoveredDevice = g_discoveredDevices[productId]
 		if (discoveredDevice == nil) then
-			local edisioInfos = EDISIO_INFOS[modelId] or {}
+			local edisioInfos = _getEdisioInfos( modelId )
 			discoveredDevice = {
 				productId = productId,
 				modelId = modelId,
-				modelName = edisioInfos.modelName,
+				model = edisioInfos.model,
+				modelDesc = edisioInfos.modelDesc,
+				modelFunction = edisioInfos.modelFunction,
 				channelIds = {},
 				channelTypes = edisioInfos.deviceTypes,
 				isReceiver = (edisioInfos.isReceiver == true)
@@ -761,7 +819,7 @@ DiscoveredDevices = {
 			hasBeenAdded = true
 			debug("Discovered edisio device '" .. productId .. "' and channel '" .. tostring(channelId) .. "'", "DiscoveredDevices.add")
 		else
-			if not table.contains(discoveredDevice.channelIds, channelId) then
+			if not table_contains(discoveredDevice.channelIds, channelId) then
 				table.insert(discoveredDevice.channelIds, channelId)
 				table.sort(discoveredDevice.channelIds)
 				debug("Discovered edisio device '" .. productId .. "' and new channel '" .. tostring(channelId) .. "'", "DiscoveredDevices.add")
@@ -781,7 +839,7 @@ DiscoveredDevices = {
 	get = function (productId, channelId)
 		channelId = tonumber(channelId)
 		local discoveredEdisioDevice = g_discoveredDevices[productId]
-		if ((discoveredEdisioDevice ~= nil) and (table.contains(discoveredEdisioDevice.channelIds, channelId))) then
+		if ((discoveredEdisioDevice ~= nil) and (table_contains(discoveredEdisioDevice.channelIds, channelId))) then
 			return discoveredEdisioDevice
 		end
 	end
@@ -986,6 +1044,9 @@ DeviceHelper = {
 	-- Set armed
 	setArmed = function( edisioDevice, channel, armed )
 		local deviceId = channel.deviceId
+		if not Variable.isSupported( deviceId, VARIABLE.ARMED ) then
+			return
+		end
 		armed = tostring( armed or "0" )
 		if ( armed == "1" ) then
 			debug( "Arm device #" .. tostring( deviceId ), "DeviceHelper.setArmed" )
@@ -1001,6 +1062,9 @@ DeviceHelper = {
 	-- Set tripped
 	setTripped = function (edisioDevice, channel, tripped )
 		local deviceId = channel.deviceId
+		if not Variable.isSupported( deviceId, VARIABLE.TRIPPED ) then
+			return
+		end
 		tripped = tostring( tripped or "0" )
 		if ( tripped == "1" ) then
 			debug( "Device #" .. tostring( deviceId ) .. " is tripped", "DeviceHelper.setTripped" )
@@ -1079,8 +1143,8 @@ DeviceHelper = {
 			DeviceHelper.setLoadLevel( edisioDevice, channel, data[1], nil, nil, true )
 		elseif ( edisioDevice.deviceType == "WINDOW_COVERING" ) then
 			--DeviceHelper.moveShutter( edisioDevice, channel, data[1], true )
-		elseif ( edisioDevice.deviceType == "TEMPERATURE_SENSOR" ) then -- should not occured ?
-			DeviceHelper.setTemperature( edisioDevice, channel, data )
+		--elseif ( edisioDevice.deviceType == "TEMPERATURE_SENSOR" ) then -- should not occured ?
+		--	DeviceHelper.setTemperature( edisioDevice, channel, data )
 		elseif ( edisioDevice.deviceType == "MOTION_SENSOR" ) then
 			DeviceHelper.setTripped( edisioDevice, channel, data[1] )
 		else
@@ -1089,7 +1153,7 @@ DeviceHelper = {
 	end,
 
 	updateStatuses = function( edisioDevice, channel, data )
-		local edisioInfos = EDISIO_INFOS[edisioDevice.modelId] or {}
+		local edisioInfos = _getEdisioInfos( edisioDevice.modelId )
 		local nbChannels = edisioInfos.nbChannels or 1
 		if ( nbChannels > 1 ) then
 			for i = 1, nbChannels do
@@ -1117,7 +1181,7 @@ local g_lastCommandsByEdisioId = {}
 local COMMAND_HANDLERS = {
 
 	[EDISIO_COMMAND.ON] = function( edisioDevice, channel, message )
-		if ( message.MID == EDISIO_MODEL.DOOR_SENSOR ) then
+		if ( message.MID == EDISIO_MODEL["EDS-100"] ) then
 			-- pour porte ON = fermé ?
 			DeviceHelper.setTripped( edisioDevice, channel, "0" )
 		elseif ( channel.deviceType == DEVICE_TYPE.MOTION_SENSOR.deviceType ) then
@@ -1130,7 +1194,7 @@ local COMMAND_HANDLERS = {
 	end,
 
 	[EDISIO_COMMAND.OFF] = function( edisioDevice, channel, message )
-		if ( message.MID == EDISIO_MODEL.DOOR_SENSOR ) then
+		if ( message.MID == EDISIO_MODEL["EDS-100"] ) then
 			-- pour porte OFF = ouvert ?
 			DeviceHelper.setTripped( edisioDevice, channel, "1" )
 		elseif ( channel.deviceType == DEVICE_TYPE.MOTION_SENSOR.deviceType ) then
@@ -1168,8 +1232,18 @@ local COMMAND_HANDLERS = {
 		return true
 	end,
 
+	--[[
+	[EDISIO_COMMAND.SHUTTER_OPEN] = function( edisioDevice, channel, message )
+		
+	end
+
+	[EDISIO_COMMAND.SHUTTER_CLOSE] = function( edisioDevice, channel, message )
+		
+	end
+	--]]
+
 	[EDISIO_COMMAND.DOOR_OPEN] = function( edisioDevice, channel, message )
-		if ( message.MID == EDISIO_MODEL.DOOR_SENSOR ) then
+		if ( message.MID == EDISIO_MODEL["EDS-100"] ) then
 			DeviceHelper.setTripped( edisioDevice, channel, "1" )
 		else
 			warning( "Command DOOR_OPEN not implemented for modelId " .. tostring( message.MID ), "Message.process" )
@@ -1178,6 +1252,7 @@ local COMMAND_HANDLERS = {
 		return true
 	end,
 
+	--[[
 	[EDISIO_COMMAND.DOOR_CLOSE] = function( edisioDevice, channel, message )
 		if ( message.MID == EDISIO_MODEL.TEMPERATURE_SENSOR ) then
 			DeviceHelper.setTemperature( edisioDevice, channel, message.DATA )
@@ -1189,17 +1264,23 @@ local COMMAND_HANDLERS = {
 		end
 		return true
 	end,
+	--]]
+
+	[EDISIO_COMMAND.SET_TEMPERATURE] = function( edisioDevice, channel, message )
+		DeviceHelper.setTemperature( edisioDevice, channel, message.DATA )
+		return true
+	end,
 
 	[EDISIO_COMMAND.REPORT_STATUS] = function( edisioDevice, channel, message )
 		--debug( "Update status for edisio device " .. edisioDevice.productId, "Message.process" )
-		debug( "Update status for edisio device " .. edisioDevice.productId .. ": " .. _toHex(message.DATA), "Message.process" )
+		debug( "Update status for edisio device " .. edisioDevice.productId .. ": " .. number_toHex(message.DATA), "Message.process" )
 		DeviceHelper.updateStatuses( edisioDevice, channel, message.DATA )
 		return true
 	end,
 
 	[EDISIO_COMMAND.REPORT_CUSTOM] = function( edisioDevice, channel, message )
 		-- TODO
-		debug( "Report parameters for edisio device " .. edisioDevice.productId .. ": " .. _toHex(message.DATA), "Message.process" )
+		debug( "Report parameters for edisio device " .. edisioDevice.productId .. ": " .. number_toHex(message.DATA), "Message.process" )
 		
 		return true
 	end
@@ -1236,15 +1317,15 @@ Message = {
 
 	process = function( payload )
 		local message = {
-			productId = table.concatHex( payload, "-", 1 ,4 ),
-			PID  = table.extract( payload, 1 ,4 ),
+			productId = table_concatHex( payload, "-", 1 ,4 ),
+			PID  = table_extract( payload, 1 ,4 ),
 			CID  = payload[5],
 			MID  = payload[6],
 			BL   = payload[7],
 			RMAX = payload[8],
 			RC   = payload[9],
 			CMD  = payload[10],
-			DATA = table.extract( payload, 11 )
+			DATA = table_extract( payload, 11 )
 		}
 		--debug("message=" .. json.encode(message), "Message.process")
 
@@ -1275,9 +1356,9 @@ Message = {
 				table.insert( g_messageToProcessQueue, { edisioDevice, channel, message } )
 				luup.call_delay( "EdisioGateway.Message.deferredProcess", 0 )
 			else
-				--warning("Command 0x" .. _toHex(message.CMD) .. " not yet implemented for message " .. table.concatHex(payload), "Message.process" )
+				--warning("Command 0x" .. number_toHex(message.CMD) .. " not yet implemented for message " .. table_concatHex(payload), "Message.process" )
 				-- TODO : Do not expose edisio protocol ?
-				warning( "Command 0x" .. _toHex(message.CMD) .. " not yet implemented for edisio device " .. message.productId, "Message.process" )
+				warning( "Command 0x" .. number_toHex(message.CMD) .. " not yet implemented for edisio device " .. message.productId, "Message.process" )
 			end
 		else
 			-- Add this device to the discovered edisio devices (but not known)
@@ -1334,7 +1415,7 @@ end
 
 function handleIncoming( lul_data )
 	local rxByte = string.byte( lul_data )
---debug("state " .. state .. ", rxByte=" .. _toHex(rxByte) .. ", rxCount=" .. rxCount .. ", protocolIdx=" .. protocolIdx, "handleIncoming")
+--debug("state " .. state .. ", rxByte=" .. number_toHex(rxByte) .. ", rxCount=" .. rxCount .. ", protocolIdx=" .. protocolIdx, "handleIncoming")
 
 	-- Add the received byte in the buffer
 	rxCount = rxCount + 1
@@ -1348,7 +1429,7 @@ function handleIncoming( lul_data )
 
 	--rxBuf[rxCount] = rxByte
 	table.insert( rxBuf, rxByte )
---debug("buffer: ".. table.concatHex(rxBuf), "handleIncoming")
+--debug("buffer: ".. table_concatHex(rxBuf), "handleIncoming")
 	if ( EDISIO_PROTOCOL[state][protocolIdx] == rxByte ) then
 		protocolIdx = protocolIdx + 1
 		if ( protocolIdx > #EDISIO_PROTOCOL[state] ) then
@@ -1365,7 +1446,7 @@ function handleIncoming( lul_data )
 				for i = 1, #EDISIO_PROTOCOL[state] do
 					table.remove(rxBuf)
 				end
-				debug( "*** payload received: " .. table.concatHex(rxBuf), "handleIncoming" )
+				debug( "*** payload received: " .. table_concatHex(rxBuf), "handleIncoming" )
 				Message.process( rxBuf )
 				state = STATE.GET_BOOT_CODE
 				_clearBuffer()
@@ -1413,7 +1494,7 @@ Network = {
 
 		local packet
 		if (type(message) == "string") then
-			packet = string.char(unpack(string.split(message, "-", tonumber, 16)))  
+			packet = string.char(unpack(string_split(message, "-", tonumber, 16)))  
 		else
 			packet = string.char(unpack(EDISIO_PROTOCOL[STATE.GET_BOOT_CODE])) ..
 				string.char(unpack(message.PID or {0x00, 0x00, 0x00, 0x00})) ..
@@ -1431,7 +1512,7 @@ Network = {
 
 		-- Delayed message
 		if (delay) then
-			luup.call_delay("EdisioGateway.Network.send", delay, string.formatToHex(packet, "-"))
+			luup.call_delay("EdisioGateway.Network.send", delay, string_formatToHex(packet, "-"))
 			return
 		end
 
@@ -1455,7 +1536,7 @@ Network = {
 
 		g_isSendingMessage = true
 		while g_messageToSendQueue[1] do
-	debug( "Send message: ".. string.formatToHex(g_messageToSendQueue[1]), "Network.flush" )
+	debug( "Send message: ".. string_formatToHex(g_messageToSendQueue[1]), "Network.flush" )
 			if not luup.io.write(g_messageToSendQueue[1]) then
 				error( "Failed to send packet", "Network.flush" )
 				return
@@ -1498,7 +1579,7 @@ Tools = {
 			return nil
 		end
 		local PID = {}
-		for i, strHex in ipairs(string.split(productId, "-")) do
+		for i, strHex in ipairs(string_split(productId, "-")) do
 			PID[i] = tonumber(strHex, 16)
 		end
 		return PID
@@ -1511,7 +1592,7 @@ Tools = {
 		for i = 1, 3 do
 			virtualPID[i] = math.random(0xFF + 1) - 1
 		end
-		return table.concatHex(virtualPID)
+		return table_concatHex(virtualPID)
 	end
 }
 
@@ -1524,7 +1605,7 @@ Association = {
 	-- Get associations from string
 	get = function( strAssociation )
 		local association = {}
-		for _, encodedAssociation in pairs( string.split( strAssociation or "", "," ) ) do
+		for _, encodedAssociation in pairs( string_split( strAssociation or "", "," ) ) do
 			local linkedId, level, isScene, isEdisio = nil, 1, false, false
 			while ( encodedAssociation ) do
 				local firstCar = string.sub( encodedAssociation, 1 , 1 )
@@ -1591,13 +1672,13 @@ Association = {
 		end
 		local result = {}
 		if association.devices then
-			table.append( result, _getEncodedAssociations( association.devices, "" ) )
+			table_append( result, _getEncodedAssociations( association.devices, "" ) )
 		end
 		if association.scenes then
-			table.append( result, _getEncodedAssociations( association.scenes, "*" ) )
+			table_append( result, _getEncodedAssociations( association.scenes, "*" ) )
 		end
 		if association.edisioDevices then
-			table.append( result, _getEncodedAssociations( association.edisioDevices, "%" ) )
+			table_append( result, _getEncodedAssociations( association.edisioDevices, "%" ) )
 		end
 		return table.concat( result, "," )
 	end,
@@ -1661,17 +1742,20 @@ local function _retrieveChildDevices()
 				debug( "Found child device #".. tostring( deviceId ) .."(".. device.description .."), but productId '" .. tostring( device.id ) .. "' does not match pattern '[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2},[0-9]'", "retrieveChildDevices" )
 			else
 				local modelId = tonumber( Variable.get( deviceId, VARIABLE.MODEL_ID ) or 0 ) or -1
-				local edisioInfos = EDISIO_INFOS[modelId] or {}
+				local edisioInfos = _getEdisioInfos( modelId )
 				local edisioDevice = g_edisioDevices[productId]
 				if ( edisioDevice == nil ) then
 					edisioDevice = {
 						productId = productId,
 						PID = Tools.getPID( productId ),
 						modelId = modelId,
-						modelName = edisioInfos.modelName,
+						model = edisioInfos.model,
+						modelDesc = edisioInfos.modelDesc,
+						modelFunction = edisioInfos.modelFunction,
 						channels = {},
 						isButton = ( edisioInfos.isButton == true ),
-						isReceiver = ( edisioInfos.isReceiver == true )
+						isReceiver = ( edisioInfos.isReceiver == true ),
+						isBatteryPowered = ( edisioInfos.isBatteryPowered == true )
 					}
 					g_edisioDevices[productId] = edisioDevice
 				else
@@ -1728,7 +1812,7 @@ local function _retrieveChildDevices()
 	-- Search unregistered channels
 	for productId, edisioDevice in pairs( g_edisioDevices ) do
 		if edisioDevice.isReceiver then
-			local edisioInfos = EDISIO_INFOS[edisioDevice.modelId] or {}
+			local edisioInfos = _getEdisioInfos( edisioDevice.modelId )
 			local channelId = 1
 			while ( channelId <= ( edisioInfos.nbChannels or 1 ) ) do
 				local channel = edisioDevice.channels[ tostring( channelId ) ]
@@ -1758,8 +1842,8 @@ local function _logEdisioDevices ()
 	end
 	log("* Ediso devices: " .. tostring(nbEdisioDevices), "logEdisioDevices")
 	for modelId, nbDevices in pairs(nbDevicesByModel) do
-		local infos = EDISIO_INFOS[modelId] or {}
-		log("*" .. string.lpad((infos.modelName or "UNKNOWN"), 20) .. ": " .. tostring(nbDevices), "logEdisioDevices")
+		local infos = _getEdisioInfos( modelId )
+		log("*" .. string_lpad((infos.modelDesc or "UNKNOWN"), 20) .. ": " .. tostring(nbDevices), "logEdisioDevices")
 	end
 end
 
@@ -1822,7 +1906,7 @@ local _handlerCommands = {
 		result = { devices = {}, discoveredDevices = {} }
 		-- Known devices
 		for _, edisioDevice in pairs( g_edisioDevices ) do
-			local edisioDevice = table.extend( {}, edisioDevice ) -- Clone the device
+			local edisioDevice = table_extend( {}, edisioDevice ) -- Clone the device
 			local channels = {}
 			for channelId, channel in pairs( edisioDevice.channels ) do
 				if ( channelId == tostring( channel.id ) ) then
@@ -1859,14 +1943,14 @@ setmetatable(_handlerCommands,{
 	end
 })
 
-local function _handleCommand (lul_request, lul_parameters, lul_outputformat)
+local function _handleCommand( lul_request, lul_parameters, lul_outputformat )
 	--log("lul_request: " .. tostring(lul_request), "handleCommand")
 	--log("lul_parameters: " .. tostring(json.encode(lul_parameters)), "handleCommand")
 	--log("lul_outputformat: " .. tostring(lul_outputformat), "handleCommand")
 
 	local command = lul_parameters["command"] or "default"
-	log("Get handler for command '" .. tostring(command) .."'", "handleCommand")
-	return _handlerCommands[command](lul_parameters, lul_outputformat)
+	log( "Get handler for command '" .. tostring(command) .."'", "handleCommand" )
+	return _handlerCommands[command]( lul_parameters, lul_outputformat )
 end
 
 
@@ -1875,17 +1959,17 @@ end
 -- **************************************************
 
 function teachIn( edisioId )
-	local productId, channelId = unpack(string.split(edisioId, ","))
+	local productId, channelId = unpack(string_split(edisioId, ","))
 	local edisioDevice, channel = _getEdisioDevice(productId, channelId)
-	if ((edisioDevice == nil) or (channel == nil)) then
+	if ( ( edisioDevice == nil ) or ( channel == nil ) ) then
 		return
 	end
-	debug("TEACH IN " .. tostring(edisioDevice.productId), "teachIn")
+	debug( "TEACH IN " .. tostring(edisioDevice.productId), "teachIn" )
 	-- Study
 	Network.send({
 		PID = edisioDevice.PID,
 		CID = tonumber(channelId),
-		MID = 0x16,
+		MID = EDISIO_MODEL.GATEWAY,
 		CMD = EDISIO_COMMAND.STUDY
 	})
 	-- Pair virtual button
@@ -1895,29 +1979,29 @@ function teachIn( edisioId )
 		MID = 0x01,
 		--CMD = EDISIO_COMMAND.SET_SHORT
 		CMD = EDISIO_COMMAND.TOGGLE
-	}, 5)
+	}, 5 )
 	-- Validate
 	Network.send({
 		PID = edisioDevice.PID,
 		CID = tonumber(channelId),
-		MID = 0x16,
+		MID = EDISIO_MODEL.GATEWAY,
 		CMD = EDISIO_COMMAND.STUDY
-	}, 10)
+	}, 10 )
 end
 
 function clear( edisioId )
-	local productId, channelId = unpack( string.split( edisioId, "," ) )
+	local productId, channelId = unpack( string_split( edisioId, "," ) )
 	local edisioDevice, channel = _getEdisioDevice( productId, channelId )
 	if ( edisioDevice == nil ) then
 		return
 	end
-	local edisioInfos = EDISIO_INFOS[edisioDevice.modelId] or {}
+	local edisioInfos = _getEdisioInfos( edisioDevice.modelId )
 	debug( "CLEAR " .. tostring( edisioDevice.productId ), "teachIn" )
 	-- Study
 	Network.send( {
 		PID = edisioDevice.PID,
 		CID = edisioInfos.nbChannels or tonumber( channelId ),
-		MID = 0x16,
+		MID = EDISIO_MODEL.GATEWAY,
 		CMD = EDISIO_COMMAND.DEL_ALL
 	} )
 end
@@ -1985,18 +2069,16 @@ function createDevices( edisioIds )
 	debug( "Create edisio product/channel/type '" .. tostring( edisioIds ) .. "'", "createDevices" )
 
 	local edisioDevicesToAdd = {}
-	for _, edisioId in ipairs( string.split( edisioIds, "|" ) ) do
-		local productId, channelId, deviceTypeName = unpack( string.split( edisioId, "," ) )
+	for _, edisioId in ipairs( string_split( edisioIds, "|" ) ) do
+		local productId, channelId, deviceTypeName = unpack( string_split( edisioId, "," ) )
 		local discoveredDevice = DiscoveredDevices.get( productId, channelId )
 		if ( discoveredDevice ~= nil ) then
-			local edisioInfos = EDISIO_INFOS[ discoveredDevice.modelId ]
-			if ( edisioInfos ~= nil ) then
-				if ( deviceTypeName == nil ) then
-					deviceTypeName = edisioInfos.deviceTypes[1]
-				end
-				if table.contains( edisioInfos.deviceTypes, deviceTypeName ) then
-					table.insert( edisioDevicesToAdd, { productId, channelId, discoveredDevice.modelId, deviceTypeName } )
-				end
+			local edisioInfos = _getEdisioInfos( discoveredDevice.modelId )
+			if ( deviceTypeName == nil ) then
+				deviceTypeName = edisioInfos.deviceTypes[1]
+			end
+			if table_contains( edisioInfos.deviceTypes, deviceTypeName ) then
+				table.insert( edisioDevicesToAdd, { productId, channelId, discoveredDevice.modelId, deviceTypeName } )
 			end
 		end
 	end
@@ -2022,7 +2104,7 @@ function createDevices( edisioIds )
 	for _, productChannel in ipairs( edisioDevicesToAdd ) do
 		local productId, channelId, modelId, deviceTypeName = unpack( productChannel )
 		local edisioId = productId .. "," .. channelId
-		local edisioInfos = EDISIO_INFOS[ modelId ]
+		local edisioInfos = _getEdisioInfos( modelId )
 		local deviceTypeInfos = DEVICE_TYPE[ deviceTypeName ]
 		local parameters = ""
 		if ( deviceTypeInfos.parameters ~= nil ) then
@@ -2056,7 +2138,7 @@ function createDevices( edisioIds )
 end
 
 function associate( edisioId, strAssociation )
-	local productId, channelId = unpack( string.split( edisioId, "," ) )
+	local productId, channelId = unpack( string_split( edisioId, "," ) )
 	local edisioDevice, channel = _getEdisioDevice( productId, channelId )
 	if ( ( edisioDevice == nil ) or ( channel == nil ) ) then
 		return
@@ -2108,7 +2190,7 @@ end
 function sendMessage( message, job )
 debug("Send message: " .. message, "sendMessage")
 	--[[local packet = ""
-	local hexCodes = string.split(message, "-")
+	local hexCodes = string_split(message, "-")
 	for _, hex in ipairs(hexCodes) do
 		packet = packet .. string.char(tonumber(hex, 16) or 0)
 	end

@@ -299,9 +299,10 @@ span.edisiogateway-association span { padding: 1px; }\
 .edisio-long-press { border: red; }\
 .edisiogateway-device-channels { margin-left: 10px; }\
 .edisiogateway-device-channel { padding-right: 5px; white-space: nowrap; }\
-.edisiogateway-devices table { width: 100%; }\
-.edisiogateway-devices th { text-align: center; background-color: #ccc; }\
-.edisiogateway-devices td { padding: 5px; border: 1px solid #ccc; }\
+.edisiogateway-devices table { width: 100%; border: black 2px solid }\
+.edisiogateway-devices th { text-align: center; background-color: #ccc; font-size: 1.2em; padding: 2px; border: black 2px solid }\
+.edisiogateway-devices td { padding: 5px; border: 1px solid #ccc; border: black 1px solid }\
+.edisiogateway-devices .description { font-style: italic; }\
 #edisiogateway-device-actions { position: absolute; background: #FFF; border: 2px solid #AAA; white-space: nowrap; }\
 #edisiogateway-device-actions td { padding: 5px; }\
 #edisiogateway-device-actions button { display: inline-block; margin: 2px; }\
@@ -410,7 +411,7 @@ span.edisiogateway-association span { padding: 1px; }\
 					$.each( devicesInfos.devices, function( i, device ) {
 						var rowSpan = ( device.channels.length > 1 ? ' rowspan="' + device.channels.length + '"' : '' );
 						html += '<tr>'
-							+		'<td' + rowSpan + '>' + device.modelName + '</td>'
+							+		'<td' + rowSpan + '><div>' + device.model + ' - ' + device.modelDesc + '</div><div class="description">' + device.modelFunction + '</div></td>'
 							+		'<td' + rowSpan + '>' + device.productId + '</td>';
 						var isFirstRow = true;
 						// Sort the channels by id
@@ -490,7 +491,7 @@ span.edisiogateway-association span { padding: 1px; }\
 	}
 
 	/**
-	 *
+	 * Device associations
 	 */
 	function _showDeviceAssociation( edisioId, channel ) {
 		var html = '<div class="edisiogateway-header">'
@@ -677,7 +678,7 @@ span.edisiogateway-association span { padding: 1px; }\
 	}
 
 	/**
-	 *
+	 * Device parameters
 	 */
 	function _showDeviceParams( edisioId, channel ) {
 		var html = '<div class="edisiogateway-header">'
@@ -850,7 +851,7 @@ span.edisiogateway-association span { padding: 1px; }\
 					var html =	'<table><tr><th>Type</th><th>Product Id</th><th>Last update</th><th>Channels</th></tr>';
 					$.each( devicesInfos.discoveredDevices, function( i, discoveredDevice ) {
 						html += '<tr>'
-							+		'<td>' + discoveredDevice.modelName + '</td>'
+							+		'<td><div>' + discoveredDevice.model + ' - ' + discoveredDevice.modelDesc + '</div><div class="description">' + discoveredDevice.modelFunction + '</div></td>'
 							+		'<td>' + discoveredDevice.productId + '</td>'
 							+		'<td>' + _convertTimestampToLocaleString( discoveredDevice.lastUpdate ) + '</td>'
 							+		'<td>';
