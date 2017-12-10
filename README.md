@@ -1,6 +1,7 @@
 # <img align="left" src="media/edisiogateway_logo.png"> Vera-Plugin-EdisioGateway
 
-Control your edisio devices from your Vera
+**Control your edisio devices from your Vera**
+
 
 Designed for [Vera Control, Ltd.](http://getvera.com) Home Controllers (UI5 & UI7) and [openLuup](https://github.com/akbooer/openLuup).
 
