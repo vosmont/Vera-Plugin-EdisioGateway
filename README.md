@@ -2,6 +2,7 @@
 
 **Control your edisio devices from your Vera**
 
+<br/>
 
 Designed for [Vera Control, Ltd.](http://getvera.com) Home Controllers (UI5 & UI7) and [openLuup](https://github.com/akbooer/openLuup).
 
@@ -33,7 +34,7 @@ Set the following parameters :
 ```
 Baud Rate : 9600
 Data bits : 8
-Parity : none
+Parity    : none
 Stop bits : 1
 ```
 
