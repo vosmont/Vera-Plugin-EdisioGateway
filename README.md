@@ -1,3 +1,6 @@
+**This plugin is no longer maintained**
+
+
 # <img align="left" src="media/edisiogateway_logo.png"> Vera-Plugin-EdisioGateway
 
 **Control your edisio devices from your Vera**
